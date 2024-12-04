@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.paging.ExperimentalPagingApi
+import com.sg.data.repository.PagingRepositoryImpl
 import com.sg.data.repository.UserRepositoryImpl
 import com.sg.ui.search.SearchScreen
 import com.sg.ui.search.SearchViewModel
@@ -46,7 +47,7 @@ fun MainScreen(
             )
         }
         composable<SearchGithub> {
-            val viewModel = viewModel { SearchViewModel() }
+            val viewModel = viewModel { SearchViewModel(PagingRepositoryImpl.instance) }
             val state by viewModel.state.collectAsState()
 
             SearchScreen(

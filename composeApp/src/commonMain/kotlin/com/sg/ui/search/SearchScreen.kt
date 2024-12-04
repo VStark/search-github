@@ -59,7 +59,7 @@ fun SearchScreen(
             SearchQueryView(
                 state = searchQueryState,
                 sendIntent = sendIntent,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = modifier.fillMaxWidth(),
             )
             Spacer(Modifier.size(16.dp))
             ResultListView(
@@ -83,7 +83,7 @@ fun SearchQueryView(
         onValueChange = {
             sendIntent(SearchIntent.SearchRepository(it))
         },
-        label = { Text("Enter Repository name") },
+        label = { Text("Repository Name") },
         placeholder = { Text("Enter at least 2 characters") },
         singleLine = true,
         keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
@@ -101,7 +101,16 @@ fun ResultListView(
 ) {
     when (state) {
         is SearchState.Init -> {
-            return
+            InfoBox(
+                "Enter repository name to search.",
+                modifier,
+            )
+            Column(
+                modifier = modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text("")
+            }
         }
 
         is SearchState.Loading -> {
@@ -114,6 +123,12 @@ fun ResultListView(
         }
 
         is SearchState.Success -> {
+            val pagingState = state.paging.collectAsLazyPagingItems()
+            var pageIndex by remember { mutableIntStateOf(1) }
+            val pageSize = 5
+            val lastPage = pageIndex == ceil(
+                pagingState.itemCount.toDouble() / pageSize.toDouble()
+            ).toInt()
             LazyColumn(
                 modifier = modifier
                     .sizeIn(minHeight = 200.dp, maxHeight = 400.dp)
@@ -124,6 +139,38 @@ fun ResultListView(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
+                val remainItems = pagingState.itemCount % pageSize
+                val itemsCount =
+                    if (pagingState.itemCount == 0) {
+                        pagingState.itemCount
+                    } else if (remainItems == 0 || !lastPage) {
+                        pageSize
+                    } else {
+                        remainItems
+                    }
+                Logger.i("itemCount: $itemsCount")
+
+                items(
+                    itemsCount,
+                ) { index ->
+                    var newItemIndex = index
+                    if (pageIndex > 1) {
+                        newItemIndex = (pageIndex - 1) * pageSize + index
+                    }
+                    Logger.i("newItemIndex: $newItemIndex")
+                    val item = pagingState[newItemIndex]
+                    if (item != null) {
+                        ItemView(sendIntent, item)
+                    }
+                }
+
+                pagingState.apply {
+                    when {
+                        loadState.refresh is LoadState.Loading -> {
+                            pageIndex = 1
+                        }
+                    }
+                }
             }
 
             Column(
@@ -134,10 +181,21 @@ fun ResultListView(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(
+                        onClick = {
+                            pageIndex -= 1
+                        },
+                        enabled = pageIndex > 1,
                     ) {
                         Icon(Icons.AutoMirrored.Default.ArrowBack, "Previous")
                     }
                     IconButton(
+                        onClick = {
+                            pageIndex += 1
+                        },
+                        enabled =
+                        pageIndex < ceil(
+                            pagingState.itemCount.toDouble() / pageSize.toDouble()
+                        ).toInt()
                     ) {
                         Icon(Icons.AutoMirrored.Default.ArrowForward, "Next")
                     }
@@ -146,13 +204,24 @@ fun ResultListView(
         }
 
         is SearchState.Error -> {
-            Column(
-                modifier = modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(state.error)
-            }
+            InfoBox(
+                "Something went wrong. \n\n ${state.error}",
+                modifier,
+            )
         }
+    }
+}
+
+@Composable
+fun InfoBox(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(text)
     }
 }
 
@@ -181,7 +250,7 @@ fun ItemView(
                 ) {
                     Icon(
                         if (repo.hasStar) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                        "Favorite",
+                        "Starred",
                         modifier = Modifier.size(24.dp),
                     )
                 }

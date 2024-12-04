@@ -13,7 +13,7 @@ class UserRepositoryImpl private constructor(
 
     override suspend fun initUser(token: String): Result<User> =
         githubRepository.getUserInfo(token).onSuccess {
-            user = it
+            user = it.copy(token = token)
         }
 
     companion object {

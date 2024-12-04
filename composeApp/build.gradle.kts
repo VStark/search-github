@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.googleDevtoolsKsp)
+    alias(libs.plugins.androidXRoom)
 }
 
 kotlin {
@@ -14,6 +16,7 @@ kotlin {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
+            freeCompilerArgs.add("-Xexpect-actual-classes")
         }
     }
 
@@ -24,14 +27,13 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
         }
         commonMain.dependencies {
-            implementation(compose.runtime)
+            implementation(compose.components.resources)
+            implementation(compose.components.uiToolingPreview)
             implementation(compose.foundation)
             implementation(compose.material)
             implementation(compose.material3)
+            implementation(compose.runtime)
             implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.coil.compose)
@@ -44,8 +46,18 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.material.icons.extended)
             implementation(libs.navigation.compose)
+            implementation(libs.paging.common)
+            implementation(libs.paging.compose)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.room.paging)
+            implementation(libs.androidx.sqlite.bundled)
         }
     }
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
+    generateKotlin = true
 }
 
 android {
@@ -77,9 +89,7 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
-}
 
-
-        }
-    }
+    // Android
+    add("kspAndroid", libs.androidx.room.compiler)
 }
