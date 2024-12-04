@@ -31,6 +31,11 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
+            implementation(libs.kermit)
+            implementation(libs.ktor.client.core)
             implementation(libs.material.icons.extended)
             implementation(libs.navigation.compose)
         }

@@ -8,13 +8,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.paging.ExperimentalPagingApi
 import com.sg.ui.search.SearchScreen
+import com.sg.ui.search.SearchViewModel
 import com.sg.ui.token.TokenScreen
+import com.sg.ui.token.TokenViewModel
 
 @ExperimentalPagingApi
 @Composable
@@ -30,14 +34,26 @@ fun MainScreen(
             .verticalScroll(rememberScrollState())
     ) {
         composable<TokenLogin> {
+            val viewModel= viewModel { TokenViewModel() }
+            val state by viewModel.state.collectAsState()
 
             TokenScreen(
+                sendIntent = viewModel::handleIntent,
+                navigate = {
+                    navController.navigate(SearchGithub)
+                },
+                state = state,
                 modifier = modifier.fillMaxSize()
             )
         }
         composable<SearchGithub> {
+            val viewModel = viewModel { SearchViewModel() }
+            val state by viewModel.state.collectAsState()
 
             SearchScreen(
+                searchQueryState = viewModel.searchQueryState,
+                state = state,
+                sendIntent = viewModel::handleIntent,
                 modifier = modifier.fillMaxSize(),
             )
         }

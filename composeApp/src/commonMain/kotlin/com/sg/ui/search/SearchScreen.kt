@@ -39,9 +39,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
+import co.touchlab.kermit.Logger
+import com.sg.data.model.Repo
+import kotlin.math.ceil
 
 @Composable
 fun SearchScreen(
+    searchQueryState: String,
+    state: SearchState,
+    sendIntent: (SearchIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     MaterialTheme {
@@ -49,10 +57,14 @@ fun SearchScreen(
             modifier = modifier.padding(16.dp),
         ) {
             SearchQueryView(
+                state = searchQueryState,
+                sendIntent = sendIntent,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.size(16.dp))
             ResultListView(
+                state = state,
+                sendIntent = sendIntent,
                 modifier = modifier.align(Alignment.CenterHorizontally),
             )
         }
@@ -61,20 +73,47 @@ fun SearchScreen(
 
 @Composable
 fun SearchQueryView(
+    state: String,
+    sendIntent: (SearchIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     OutlinedTextField(
         modifier = modifier.fillMaxWidth(),
+        value = state,
+        onValueChange = {
+            sendIntent(SearchIntent.SearchRepository(it))
+        },
         label = { Text("Enter Repository name") },
         placeholder = { Text("Enter at least 2 characters") },
         singleLine = true,
+        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = {
+            sendIntent(SearchIntent.SearchRepository(state))
+        }),
     )
 }
 
 @Composable
 fun ResultListView(
+    state: SearchState,
+    sendIntent: (SearchIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    when (state) {
+        is SearchState.Init -> {
+            return
+        }
+
+        is SearchState.Loading -> {
+            Column(
+                modifier = modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        is SearchState.Success -> {
             LazyColumn(
                 modifier = modifier
                     .sizeIn(minHeight = 200.dp, maxHeight = 400.dp)
@@ -86,4 +125,69 @@ fun ResultListView(
                 verticalArrangement = Arrangement.Center,
             ) {
             }
+
+            Column(
+                modifier = modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(
+                    ) {
+                        Icon(Icons.AutoMirrored.Default.ArrowBack, "Previous")
+                    }
+                    IconButton(
+                    ) {
+                        Icon(Icons.AutoMirrored.Default.ArrowForward, "Next")
+                    }
+                }
+            }
+        }
+
+        is SearchState.Error -> {
+            Column(
+                modifier = modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(state.error)
+            }
+        }
+    }
+}
+
+@Composable
+fun ItemView(
+    sendIntent: (SearchIntent) -> Unit,
+    repo: Repo,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val colors = MaterialTheme.colorScheme
+    val itemColor =
+        if (isHovered) colors.secondaryContainer else MaterialTheme.colorScheme.surface
+
+    Column {
+        ListItem(
+            modifier = modifier.hoverable(interactionSource = interactionSource),
+            headlineContent = { Text(repo.name) },
+            supportingContent = { Text(repo.owner) },
+            trailingContent = {
+                IconButton(
+                    onClick = {
+                        sendIntent(SearchIntent.ToggleStar(repo.nodeId, !repo.hasStar))
+                    },
+                ) {
+                    Icon(
+                        if (repo.hasStar) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+                        "Favorite",
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            },
+            colors = ListItemDefaults.colors(containerColor = itemColor),
+        )
+        HorizontalDivider()
+    }
 }
