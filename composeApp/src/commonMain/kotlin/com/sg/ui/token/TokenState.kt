@@ -4,12 +4,8 @@ import com.sg.data.model.User
 
 
 sealed class TokenState {
-    data class EnterToken(
-        var token: String = "",
-    ) : TokenState()
-
-    data class ValidatingToken(
-        var user: User? = null,
-        var validating: Boolean = false,
-    ) : TokenState()
+    data object EnterToken : TokenState()
+    data object ValidatingToken : TokenState()
+    data class TokenValidated(val user: User) : TokenState()
+    data class TokenValidationFailed(val error: String) : TokenState()
 }
