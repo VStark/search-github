@@ -6,7 +6,7 @@ import com.sg.data.model.StarredRepo
 import com.sg.data.model.User
 import com.sg.data.model.toEntity
 
-class UserRepositoryImpl private constructor(
+class UserRepositoryImpl(
     private val githubRepository: GithubRepository,
     private val starredReposDao: StarredReposDao,
 ) : UserRepository {
