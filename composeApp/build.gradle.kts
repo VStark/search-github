@@ -54,6 +54,11 @@ kotlin {
             implementation(libs.androidx.room.paging)
             implementation(libs.androidx.sqlite.bundled)
         }
+        commonTest {
+            dependencies {
+                implementation(libs.kotlin.test)
+            }
+        }
     }
 }
 

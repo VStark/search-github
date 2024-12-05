@@ -10,7 +10,7 @@ import com.sg.data.model.User
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
-class GithubRepositoryImpl private constructor(
+class GithubRepositoryImpl(
     private val api: GithubApi,
     private val starredReposDao: StarredReposDao,
 ) : GithubRepository {
