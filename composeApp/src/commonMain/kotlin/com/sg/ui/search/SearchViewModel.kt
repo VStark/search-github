@@ -9,7 +9,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.cachedIn
 import co.touchlab.kermit.Logger
+import com.sg.data.model.StarredRepo
+import com.sg.data.repository.GithubRepository
 import com.sg.data.repository.PagingRepositoryImpl
+import com.sg.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -17,11 +20,14 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 @ExperimentalPagingApi
 @Suppress("OPT_IN_USAGE")
 class SearchViewModel(
     private val pagingRepository: PagingRepositoryImpl,
+    private val githubRepository: GithubRepository,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     private val logger = Logger.withTag("SearchViewModel")
@@ -56,13 +62,30 @@ class SearchViewModel(
             }.launchIn(viewModelScope)
     }
 
-    fun handleIntent(searchIntent: SearchIntent) {
-        when (searchIntent) {
+    fun handleIntent(intent: SearchIntent) {
+        when (intent) {
             is SearchIntent.SearchRepository -> {
-                searchQueryState = searchIntent.query
+                searchQueryState = intent.query
             }
 
             is SearchIntent.ToggleStar -> {
+                viewModelScope.launch {
+                    githubRepository
+                        .setRepoStar(userRepository.token, intent.nodeId, intent.star)
+                        .onSuccess {
+                            val userId = userRepository.getUser().id
+                            if (intent.star) {
+                                userRepository.saveStarredRepo(
+                                    StarredRepo(
+                                        repoId = intent.repoId,
+                                        userId = userId
+                                    )
+                                )
+                            } else {
+                                userRepository.deleteStarredRepo(intent.repoId)
+                            }
+                        }
+                }
             }
         }
     }

@@ -1,5 +1,9 @@
 package com.sg.data.api
 
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Mutation
+import com.apollographql.apollo.api.Optional
+import com.sg.data.api.gql.apolloClient
 import com.sg.data.api.rest.Links
 import com.sg.data.api.rest.RepoJson
 import com.sg.data.api.rest.ReposJson
@@ -9,6 +13,10 @@ import com.sg.data.model.ReposPage
 import com.sg.data.model.User
 import com.sg.data.model.toRepos
 import com.sg.data.model.toUser
+import com.sg.graphql.AddStarMutation
+import com.sg.graphql.RemoveStarMutation
+import com.sg.graphql.type.AddStarInput
+import com.sg.graphql.type.RemoveStarInput
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.headers
@@ -23,9 +31,10 @@ import io.ktor.http.Url
 import io.ktor.http.isSuccess
 import io.ktor.http.parameters
 
-class RemoteApiImpl(
+class GithubApiImpl(
     private val httpClient: HttpClient,
-) : RemoteApi {
+    private val gqlClient: ApolloClient,
+) : GithubApi {
 
     override suspend fun searchForRepositories(
         token: String,
@@ -66,6 +75,31 @@ class RemoteApiImpl(
                     }
             }
 
+    override suspend fun setRepoStar(
+        token: String,
+        repoId: String,
+        starred: Boolean
+    ): Result<Unit>  {
+        return makeGQLMutation(
+            if (starred) {
+                AddStarMutation(
+                    AddStarInput(
+                        clientMutationId = Optional.present("123"),
+                        starrableId = repoId
+                    )
+                )
+            } else {
+                RemoveStarMutation(
+                    RemoveStarInput(
+                        clientMutationId = Optional.present("321"),
+                        starrableId = repoId
+                    )
+                )
+            }
+        )
+    }
+
+
     private suspend fun prepareRepos(httpResponse: HttpResponse): ReposPage {
         val links = parseLinks(httpResponse.headers[HttpHeaders.Link])
         val repos = httpResponse.body<ReposJson>().toRepos()
@@ -98,6 +132,40 @@ class RemoteApiImpl(
             linksTmp
         } ?: Links()
     }
+
+    private suspend fun makeGQLMutation(
+        mutation: Mutation<*>
+    ): Result<Unit> =
+        runCatching {
+            gqlClient.mutation(mutation).execute()
+        }.fold(
+            onSuccess = { response ->
+                return when {
+                    response.exception != null -> {
+                        Result.failure(
+                            Exception(
+                                "Failed to mutate data, name: ${response.operation.name()}",
+                                response.exception?.cause,
+                            )
+                        )
+                    }
+
+                    response.hasErrors() -> {
+                        Result.failure(
+                            Exception(
+                                "Failed to mutate data, name: ${response.operation.name()}, " +
+                                        "errors: ${response.errors?.map { it.message }}",
+                            )
+                        )
+                    }
+
+                    else -> Result.success(Unit)
+                }
+            },
+            onFailure = {
+                Result.failure(it)
+            }
+        )
 
     private suspend fun makeHttpRequest(
         token: String,
@@ -143,6 +211,6 @@ class RemoteApiImpl(
         )
 
     companion object {
-        val instance by lazy { RemoteApiImpl(ktorClient) }
+        val instance by lazy { GithubApiImpl(ktorClient, apolloClient) }
     }
 }

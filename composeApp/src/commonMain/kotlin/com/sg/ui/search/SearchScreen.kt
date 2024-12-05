@@ -245,7 +245,7 @@ fun ItemView(
             trailingContent = {
                 IconButton(
                     onClick = {
-                        sendIntent(SearchIntent.ToggleStar(repo.nodeId, !repo.hasStar))
+                        sendIntent(SearchIntent.ToggleStar(repo.id, repo.nodeId, !repo.hasStar))
                     },
                 ) {
                     Icon(

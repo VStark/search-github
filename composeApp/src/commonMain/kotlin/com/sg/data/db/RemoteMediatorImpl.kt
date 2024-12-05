@@ -6,10 +6,10 @@ import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.room.immediateTransaction
 import androidx.room.useWriterConnection
-import androidx.room.withTransaction
+import co.touchlab.kermit.Logger
 import com.sg.data.db.dto.RemoteKeyEntity
-import com.sg.data.db.dto.RepoEntity
-import com.sg.data.model.Repo
+import com.sg.data.db.dto.RepoWithUserRepo
+import com.sg.data.model.toEntity
 import com.sg.data.repository.GithubRepository
 
 @OptIn(ExperimentalPagingApi::class)
@@ -19,13 +19,14 @@ class RemoteMediatorImpl(
     private val perPage: Int,
     private val token: String,
     private val repo: GithubRepository,
-) : RemoteMediator<Int, RepoEntity>() {
-    private val repoDao = db.repoDao()
+) : RemoteMediator<Int, RepoWithUserRepo>() {
+    private val logger = Logger.withTag("RemoteMediatorImpl")
+    private val repoDao = db.reposDao()
     private val remoteKeyDao = db.remoteKeysDao()
 
     override suspend fun load(
         loadType: LoadType,
-        state: PagingState<Int, RepoEntity>
+        state: PagingState<Int, RepoWithUserRepo>
     ): MediatorResult {
         return try {
             val loadKey = when (loadType) {
@@ -34,7 +35,6 @@ class RemoteMediatorImpl(
                     return MediatorResult.Success(
                         endOfPaginationReached = true
                     )
-
                 LoadType.APPEND -> {
                     val remoteKey = remoteKeyDao.getByQuery(query)
                     if (remoteKey.nextKey == null) {
@@ -68,25 +68,8 @@ class RemoteMediatorImpl(
                 endOfPaginationReached = repoPage.nextPageUrl.isEmpty()
             )
         } catch (e: Exception) {
+            logger.e(e) { "Load method error: ${e.message}" }
             MediatorResult.Error(e)
         }
     }
 }
-
-fun Repo.toEntity(query: String): RepoEntity =
-    RepoEntity(
-        repoId = id,
-        nodeId = nodeId,
-        name = name,
-        owner = owner,
-        query = query,
-    )
-
-fun RepoEntity.toRepo(): Repo =
-    Repo(
-        id = repoId,
-        nodeId = nodeId,
-        hasStar = false,
-        name = name,
-        owner = owner,
-    )
