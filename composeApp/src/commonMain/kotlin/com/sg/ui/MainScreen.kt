@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.paging.ExperimentalPagingApi
+import com.sg.data.repository.GithubRepositoryImpl
 import com.sg.data.repository.PagingRepositoryImpl
 import com.sg.data.repository.UserRepositoryImpl
 import com.sg.ui.search.SearchScreen
@@ -34,7 +35,7 @@ fun MainScreen(
         modifier = modifier.fillMaxSize()
     ) {
         composable<TokenLogin> {
-            val viewModel= viewModel { TokenViewModel(UserRepositoryImpl.instance) }
+            val viewModel = viewModel { TokenViewModel(UserRepositoryImpl.instance) }
             val state by viewModel.state.collectAsState()
 
             TokenScreen(
@@ -47,7 +48,13 @@ fun MainScreen(
             )
         }
         composable<SearchGithub> {
-            val viewModel = viewModel { SearchViewModel(PagingRepositoryImpl.instance) }
+            val viewModel = viewModel {
+                SearchViewModel(
+                    PagingRepositoryImpl.instance,
+                    GithubRepositoryImpl.instance,
+                    UserRepositoryImpl.instance
+                )
+            }
             val state by viewModel.state.collectAsState()
 
             SearchScreen(

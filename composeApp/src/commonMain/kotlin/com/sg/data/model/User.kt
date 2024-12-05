@@ -5,5 +5,4 @@ data class User(
     val login: String = "",
     val token: String = "",
     val avatarUrl: String = "",
-    val starredRepos: Map<Long, String> = emptyMap(),
 )

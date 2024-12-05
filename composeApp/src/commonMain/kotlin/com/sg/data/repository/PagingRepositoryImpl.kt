@@ -10,14 +10,14 @@ import androidx.paging.map
 import com.sg.data.db.AppDatabase
 import com.sg.data.db.RemoteMediatorImpl
 import com.sg.data.db.appDatabase
-import com.sg.data.db.toRepo
 import com.sg.data.model.Repo
+import com.sg.data.model.toRepo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @ExperimentalPagingApi
 class PagingRepositoryImpl(
-    private val token: String,
+    private val userRepository: UserRepository,
     private val githubRepository: GithubRepository,
     private val db: AppDatabase,
 ) : PagingRepository {
@@ -28,9 +28,15 @@ class PagingRepositoryImpl(
                 initialLoadSize = perPage,
                 enablePlaceholders = false
             ),
-            remoteMediator = RemoteMediatorImpl(query, db, perPage, token, githubRepository)
+            remoteMediator = RemoteMediatorImpl(
+                query,
+                db,
+                perPage,
+                userRepository.token,
+                githubRepository
+            )
         ) {
-            db.repoDao().pagingSource(query)
+            db.reposDao().pagingSource(query)
         }.flow.map {
             it.map { entity ->
                 entity.toRepo()
@@ -40,7 +46,7 @@ class PagingRepositoryImpl(
     companion object {
         val instance by lazy {
             PagingRepositoryImpl(
-                UserRepositoryImpl.instance.userToken,
+                UserRepositoryImpl.instance,
                 GithubRepositoryImpl.instance,
                 appDatabase
             )

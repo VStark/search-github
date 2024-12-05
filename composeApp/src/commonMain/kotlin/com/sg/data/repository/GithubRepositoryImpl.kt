@@ -1,15 +1,19 @@
 package com.sg.data.repository
 
-import com.sg.data.api.RemoteApi
-import com.sg.data.api.RemoteApiImpl
+import com.sg.data.api.GithubApi
+import com.sg.data.api.GithubApiImpl
+import com.sg.data.db.appDatabase
+import com.sg.data.db.dao.StarredReposDao
+import com.sg.data.db.dto.StarredRepoEntity
 import com.sg.data.model.ReposPage
 import com.sg.data.model.User
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
 class GithubRepositoryImpl private constructor(
-    private val api: RemoteApi,
-): GithubRepository {
+    private val api: GithubApi,
+    private val starredReposDao: StarredReposDao,
+) : GithubRepository {
 
     override suspend fun getReposFromSearch(
         token: String,
@@ -29,17 +33,39 @@ class GithubRepositoryImpl private constructor(
             val reposDeffer = async {
                 api.getUserStarredRepos(token)
             }
-            val userResult = userDeffer.await().getOrNull()
-            val starredReposResult = reposDeffer.await().getOrNull()
 
-            return@coroutineScope userResult?.let { user ->
-                starredReposResult?.let { starredRepos ->
-                    Result.success(user.copy(starredRepos = starredRepos))
-                }
-            } ?: Result.failure(Exception("Failed to get user."))
+            val userResult = userDeffer.await()
+            val reposResult = reposDeffer.await()
+
+            return@coroutineScope runCatching {
+                val user = userResult.getOrThrow()
+                val repos = reposResult.getOrThrow()
+                starredReposDao.deleteAll()
+                starredReposDao.insertAll(
+                    repos.keys.map { repoId ->
+                        StarredRepoEntity(
+                            repoId = repoId,
+                            userId = user.id,
+                        )
+                    })
+
+                user
+            }
         }
 
+    override suspend fun setRepoStar(
+        token: String,
+        repoId: String,
+        starred: Boolean
+    ): Result<Unit> =
+        api.setRepoStar(token, repoId, starred)
+
     companion object {
-        val instance by lazy { GithubRepositoryImpl(RemoteApiImpl.instance) }
+        val instance by lazy {
+            GithubRepositoryImpl(
+                GithubApiImpl.instance,
+                appDatabase.starredReposDao(),
+            )
+        }
     }
 }
