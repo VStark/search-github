@@ -24,6 +24,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -114,21 +116,30 @@ fun ResultListView(
         }
 
         is SearchState.Loading -> {
-            Column(
-                modifier = modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                CircularProgressIndicator()
-            }
+            LoadingBox(modifier)
         }
 
         is SearchState.Success -> {
             val pagingState = state.paging.collectAsLazyPagingItems()
             var pageIndex by remember { mutableIntStateOf(1) }
+            var loading by remember { mutableStateOf(false) }
             val pageSize = 5
             val lastPage = pageIndex == ceil(
                 pagingState.itemCount.toDouble() / pageSize.toDouble()
             ).toInt()
+
+            if (pagingState.itemCount == 0) {
+                InfoBox(
+                    "No repositories found.",
+                    modifier,
+                )
+                return
+            }
+
+            if (loading) {
+                FlatLoadingBox(modifier)
+            }
+
             LazyColumn(
                 modifier = modifier
                     .sizeIn(minHeight = 200.dp, maxHeight = 400.dp)
@@ -148,7 +159,6 @@ fun ResultListView(
                     } else {
                         remainItems
                     }
-                Logger.i("itemCount: $itemsCount")
 
                 items(
                     itemsCount,
@@ -157,7 +167,6 @@ fun ResultListView(
                     if (pageIndex > 1) {
                         newItemIndex = (pageIndex - 1) * pageSize + index
                     }
-                    Logger.i("newItemIndex: $newItemIndex")
                     val item = pagingState[newItemIndex]
                     if (item != null) {
                         ItemView(sendIntent, item)
@@ -168,6 +177,16 @@ fun ResultListView(
                     when {
                         loadState.refresh is LoadState.Loading -> {
                             pageIndex = 1
+                            loading = true
+                        }
+                        loadState.append is LoadState.Loading ||
+                        loadState.prepend is LoadState.Loading -> {
+                            loading = true
+                        }
+                        loadState.refresh is LoadState.NotLoading ||
+                        loadState.append is LoadState.NotLoading ||
+                        loadState.prepend is LoadState.NotLoading -> {
+                            loading = false
                         }
                     }
                 }
@@ -192,8 +211,7 @@ fun ResultListView(
                         onClick = {
                             pageIndex += 1
                         },
-                        enabled =
-                        pageIndex < ceil(
+                        enabled = pageIndex < ceil(
                             pagingState.itemCount.toDouble() / pageSize.toDouble()
                         ).toInt()
                     ) {
@@ -222,6 +240,32 @@ fun InfoBox(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(text)
+    }
+}
+
+@Composable
+fun LoadingBox(
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+fun FlatLoadingBox(
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        LinearProgressIndicator(
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
