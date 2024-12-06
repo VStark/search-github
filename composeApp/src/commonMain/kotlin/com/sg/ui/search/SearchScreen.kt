@@ -86,7 +86,7 @@ fun SearchQueryView(
             sendIntent(SearchIntent.SearchRepository(it))
         },
         label = { Text("Repository Name") },
-        placeholder = { Text("Enter at least 2 characters") },
+        placeholder = { Text("Enter at least 3 characters") },
         singleLine = true,
         keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = {
