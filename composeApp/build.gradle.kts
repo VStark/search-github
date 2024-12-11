@@ -1,4 +1,5 @@
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -24,6 +25,8 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
+
+    jvm()
 
     sourceSets {
         androidMain.dependencies {
@@ -62,6 +65,10 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.test)
             }
+        }
+        jvmMain.dependencies {
+            implementation(compose.desktop.currentOs)
+            implementation(libs.kotlinx.coroutines.swing)
         }
     }
 }
@@ -103,6 +110,20 @@ dependencies {
 
     // Android
     add("kspAndroid", libs.androidx.room.compiler)
+}
+
+compose {
+    desktop {
+        application {
+            mainClass = "com.sg.MainKt"
+
+            nativeDistributions {
+                targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+                packageName = "com.sg"
+                packageVersion = "1.0.0"
+            }
+        }
+    }
 }
 
 apollo {
