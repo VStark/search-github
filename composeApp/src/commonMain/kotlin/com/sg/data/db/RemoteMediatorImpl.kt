@@ -29,6 +29,7 @@ class RemoteMediatorImpl(
         state: PagingState<Int, RepoWithUserRepo>
     ): MediatorResult {
         return try {
+            /*
             val loadKey = when (loadType) {
                 LoadType.REFRESH -> null
                 LoadType.PREPEND ->
@@ -64,8 +65,10 @@ class RemoteMediatorImpl(
             repoDao.insertAll(repoPage.items.map { it.toEntity(query) })
             remoteKeyDao.insert(RemoteKeyEntity(query, repoPage.nextPageUrl))
 
+
+             */
             return MediatorResult.Success(
-                endOfPaginationReached = repoPage.nextPageUrl.isEmpty()
+                endOfPaginationReached = true //repoPage.nextPageUrl.isEmpty()
             )
         } catch (e: Exception) {
             logger.e(e) { "Load method error: ${e.message}" }

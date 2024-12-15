@@ -4,16 +4,23 @@ import com.sg.data.api.rest.RepoJson
 import com.sg.data.api.rest.ReposJson
 import com.sg.data.api.rest.UserJson
 import com.sg.data.db.dto.RepoEntity
+import com.sg.data.db.dto.RepoPageEntity
 import com.sg.data.db.dto.RepoWithUserRepo
 import com.sg.data.db.dto.StarredRepoEntity
 
-fun Repo.toEntity(query: String): RepoEntity =
+fun Repo.toEntity(): RepoEntity =
     RepoEntity(
         repoId = id,
         nodeId = nodeId,
         name = name,
         owner = owner,
+    )
+
+fun Repo.toRepoPageEntity(query: String, page: Int): RepoPageEntity =
+    RepoPageEntity(
+        repoId = id,
         query = query,
+        page = page,
     )
 
 fun RepoWithUserRepo.toRepo(): Repo =
@@ -31,13 +38,12 @@ fun StarredRepo.toEntity(): StarredRepoEntity =
         userId = userId,
     )
 
-fun UserJson.toUser(): User = run {
+fun UserJson.toUser(): User =
     User(
         id = id,
         login = login,
         avatarUrl = avatarUrl,
     )
-}
 
 fun ReposJson.toRepos(): ReposPage = run {
     val items = items.map { it.toRepo() }
@@ -47,7 +53,7 @@ fun ReposJson.toRepos(): ReposPage = run {
     )
 }
 
-fun RepoJson.toRepo(): Repo = run {
+fun RepoJson.toRepo(): Repo =
     Repo(
         id = id,
         nodeId = nodeId,
@@ -55,4 +61,3 @@ fun RepoJson.toRepo(): Repo = run {
         name = name,
         owner = owner.login,
     )
-}

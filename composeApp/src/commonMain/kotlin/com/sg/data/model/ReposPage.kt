@@ -7,6 +7,6 @@ data class ReposPage(
     val pages: Int = 1,
     val hasNextPage: Boolean = false,
     val hasPreviousPage: Boolean = false,
-    val nextPageUrl: String = "",
-    val previousPageUrl: String = "",
+    val nextPageUrl: String? = null,
+    val previousPageUrl: String? = null,
 )
