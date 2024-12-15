@@ -2,6 +2,7 @@ package com.sg.data.repository
 
 import com.sg.data.db.dao.StarredReposDao
 import com.sg.data.db.dto.StarredRepoEntity
+import kotlinx.coroutines.flow.Flow
 
 class StarredRepositoryMock(
     private val insertThrowException: Boolean = false,
@@ -22,6 +23,10 @@ class StarredRepositoryMock(
         } else {
             Unit
         }
+
+    override fun watch(): Flow<Int> {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun deleteAll() =
         if (deleteAllThrowException) {

@@ -104,14 +104,14 @@ class GithubApiImpl(
         val links = parseLinks(httpResponse.headers[HttpHeaders.Link])
         val repos = httpResponse.body<ReposJson>().toRepos()
         val page = httpResponse.request.url.parameters["page"]?.toIntOrNull() ?: 1
-        val pages = Url(links.last).parameters["page"]?.toIntOrNull() ?: 1
+        val pages = links.last?.let { Url(links.last).parameters["page"]?.toIntOrNull() ?: 1 } ?: 1
         return repos.copy(
             page = page,
             pages = pages,
             nextPageUrl = links.next,
             previousPageUrl = links.prev,
-            hasNextPage = links.next.isNotEmpty(),
-            hasPreviousPage = links.prev.isNotEmpty(),
+            hasNextPage = !links.next.isNullOrEmpty(),
+            hasPreviousPage = !links.prev.isNullOrEmpty(),
         )
     }
 

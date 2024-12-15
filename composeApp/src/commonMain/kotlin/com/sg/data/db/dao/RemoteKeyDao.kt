@@ -12,8 +12,8 @@ interface RemoteKeyDao {
     suspend fun insert(remoteKey: RemoteKeyEntity)
 
     @Query("SELECT * FROM remote_keys WHERE `query` = :query")
-    suspend fun getByQuery(query: String): RemoteKeyEntity
+    suspend fun getRemoteKeyByQuery(query: String): RemoteKeyEntity
 
-    @Query("DELETE FROM remote_keys WHERE `query` = :query")
-    suspend fun deleteByQuery(query: String)
+    @Query("DELETE FROM remote_keys")
+    suspend fun deleteAll()
 }

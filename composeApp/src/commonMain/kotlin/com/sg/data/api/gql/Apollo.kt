@@ -23,22 +23,47 @@ val apolloClient = ApolloClient.Builder()
     .build()
 
 class AuthorizationInterceptor : HttpInterceptor {
-    override suspend fun intercept(request: HttpRequest, chain: HttpInterceptorChain): HttpResponse {
+    override suspend fun intercept(
+        request: HttpRequest,
+        chain: HttpInterceptorChain
+    ): HttpResponse {
         val token: String = UserRepositoryImpl.instance.token
-        return chain.proceed(request.newBuilder().addHeader("Authorization", "Bearer $token").build())
+        return chain.proceed(
+            request
+                .newBuilder()
+                .addHeader("Authorization", "Bearer $token")
+                .build()
+        )
     }
 }
 
 class GithubGlobalIdInterceptor : HttpInterceptor {
-    override suspend fun intercept(request: HttpRequest, chain: HttpInterceptorChain): HttpResponse {
-        return chain.proceed(request.newBuilder().addHeader("X-Github-Next-Global-ID", "1").build())
+    override suspend fun intercept(
+        request: HttpRequest,
+        chain: HttpInterceptorChain
+    ): HttpResponse {
+        return chain
+            .proceed(
+                request
+                    .newBuilder()
+                    .addHeader("X-Github-Next-Global-ID", "1")
+                    .build()
+            )
     }
 }
 
 class LoggingApolloInterceptor : ApolloInterceptor {
-    override fun <D : Operation.Data> intercept(request: ApolloRequest<D>, chain: ApolloInterceptorChain): Flow<ApolloResponse<D>> {
+    override fun <D : Operation.Data> intercept(
+        request: ApolloRequest<D>,
+        chain: ApolloInterceptorChain
+    ): Flow<ApolloResponse<D>> {
         return chain.proceed(request).onEach { response ->
-            Logger.i("Received response for ${request.operation.name()}: ${response.data}, exception: ${response.exception}")
+            Logger
+                .withTag("apollo")
+                .i(
+                    "Received response for ${request.operation.name()}: " +
+                            "${response.data}, exception: ${response.exception}"
+                )
         }
     }
 }

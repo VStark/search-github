@@ -13,12 +13,10 @@ import com.sg.data.model.StarredRepo
 import com.sg.data.repository.GithubRepository
 import com.sg.data.repository.PagingRepositoryImpl
 import com.sg.data.repository.UserRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -36,30 +34,36 @@ class SearchViewModel(
     var searchQueryState by mutableStateOf("")
         private set
 
+
     init {
-        snapshotFlow { searchQueryState }
-            .filter { it.length > 2 }
-            .debounce(1000)
-            .map {
-                _state.update { SearchState.Loading }
-                runCatching {
-                    pagingRepository.getPagedRepos(
-                        searchQueryState,
-                        100
-                    ).cachedIn(viewModelScope)
-                }.onSuccess { result ->
-                    _state.update {
-                        SearchState.Success(result)
-                    }
-                }.onFailure { throwable ->
-                    logger.e(throwable) {
-                        "Error while searching for repositories"
-                    }
-                    _state.update {
-                        SearchState.Error(throwable.message ?: "Unknown error")
+        viewModelScope.launch {
+            snapshotFlow { searchQueryState }
+                .collectLatest {
+                    delay(1000)
+                    _state.update { SearchState.Loading }
+                    if (it.length > 2) {
+                        runCatching {
+                            pagingRepository.getPagedRepos(
+                                searchQueryState,
+                                5,
+                            ).cachedIn(viewModelScope)
+                        }.onSuccess { result ->
+                            _state.update {
+                                SearchState.Success(result)
+                            }
+                        }.onFailure { throwable ->
+                            logger.e(throwable) {
+                                "Error while searching for repositories"
+                            }
+                            _state.update {
+                                SearchState.Error(throwable.message ?: "Unknown error")
+                            }
+                        }
+                    } else {
+                        _state.update { SearchState.Init }
                     }
                 }
-            }.launchIn(viewModelScope)
+        }
     }
 
     fun handleIntent(intent: SearchIntent) {

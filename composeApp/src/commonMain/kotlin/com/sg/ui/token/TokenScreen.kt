@@ -58,13 +58,11 @@ fun EnterTokenView(
     modifier: Modifier = Modifier,
 ) {
     var token by remember { mutableStateOf("") }
-    var enabled by remember { mutableStateOf(false) }
 
     Text("Enter your Github token")
     TextField(
         value = token,
         onValueChange = {
-            enabled = it.isNotEmpty()
             token = it
         },
         label = { Text("Token") },
@@ -72,7 +70,7 @@ fun EnterTokenView(
         singleLine = true,
         keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = {
-            if (enabled) {
+            if (token.isNotEmpty()) {
                 sendIntent(TokenIntent.ValidateToken(token))
             }
         }),
@@ -81,7 +79,7 @@ fun EnterTokenView(
         onClick = {
             sendIntent(TokenIntent.ValidateToken(token))
         },
-        enabled = enabled,
+        enabled = token.isNotEmpty(),
     ) {
         Text("Authorize")
     }

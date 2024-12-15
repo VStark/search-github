@@ -6,18 +6,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.CircularProgressIndicator
@@ -101,18 +99,14 @@ fun ResultListView(
     sendIntent: (SearchIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val logger = Logger.withTag("SearchScreen")
+    logger.i { "ResultListView" }
     when (state) {
         is SearchState.Init -> {
             InfoBox(
                 "Enter repository name to search.",
                 modifier,
             )
-            Column(
-                modifier = modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text("")
-            }
         }
 
         is SearchState.Loading -> {
@@ -121,12 +115,25 @@ fun ResultListView(
 
         is SearchState.Success -> {
             val pagingState = state.paging.collectAsLazyPagingItems()
-            var pageIndex by remember { mutableIntStateOf(1) }
+
+            var currentIndex by remember { mutableIntStateOf(0) }
+            //logger.i { "beginning $currentIndex" }
+            var pageIndex by remember { mutableIntStateOf(0) }
             var loading by remember { mutableStateOf(false) }
+
             val pageSize = 5
             val lastPage = pageIndex == ceil(
                 pagingState.itemCount.toDouble() / pageSize.toDouble()
             ).toInt()
+            val remainItems = pagingState.itemCount % pageSize
+            val itemsCount =
+                if (pagingState.itemCount == 0) {
+                    pagingState.itemCount
+                } else if (remainItems == 0 || !lastPage) {
+                    pageSize
+                } else {
+                    remainItems
+                }
 
             if (pagingState.itemCount == 0) {
                 InfoBox(
@@ -140,58 +147,76 @@ fun ResultListView(
                 FlatLoadingBox(modifier)
             }
 
+            val lazyListState = rememberLazyListState()
+
             LazyColumn(
                 modifier = modifier
                     .sizeIn(minHeight = 200.dp, maxHeight = 400.dp)
                     .fillMaxWidth()
                     .shadow(1.dp)
                     .background(MaterialTheme.colorScheme.surface),
-                userScrollEnabled = false,
+                state = lazyListState,
+                userScrollEnabled = true,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                val remainItems = pagingState.itemCount % pageSize
-                val itemsCount =
-                    if (pagingState.itemCount == 0) {
-                        pagingState.itemCount
-                    } else if (remainItems == 0 || !lastPage) {
-                        pageSize
-                    } else {
-                        remainItems
-                    }
-
+                //logger.i { "currentIndex: $currentIndex, itemCount: ${pagingState.itemCount}" }
+                logger.i { "itemCount: ${pagingState.itemCount}" }
                 items(
-                    itemsCount,
+                    pagingState.itemCount
                 ) { index ->
-                    var newItemIndex = index
-                    if (pageIndex > 1) {
-                        newItemIndex = (pageIndex - 1) * pageSize + index
-                    }
-                    val item = pagingState[newItemIndex]
-                    if (item != null) {
-                        ItemView(sendIntent, item)
-                    }
-                }
-
-                pagingState.apply {
-                    when {
-                        loadState.refresh is LoadState.Loading -> {
-                            pageIndex = 1
-                            loading = true
-                        }
-                        loadState.append is LoadState.Loading ||
-                        loadState.prepend is LoadState.Loading -> {
-                            loading = true
-                        }
-                        loadState.refresh is LoadState.NotLoading ||
-                        loadState.append is LoadState.NotLoading ||
-                        loadState.prepend is LoadState.NotLoading -> {
-                            loading = false
-                        }
+                    //pagingState[currentIndex + index]?.let {
+                    logger.i { "index: $index" }
+                    pagingState[index]?.let {
+                        ItemView(sendIntent, index, it)
                     }
                 }
             }
 
+            pagingState.loadState.apply {
+                logger.i { "loadState:\nsource:   $source,\nmediator: $mediator" }
+                when {
+                    source.refresh is LoadState.Loading -> {
+                        //currentIndex = 0
+                        //pageIndex = 0
+                        logger.i { "source refresh loading" }
+                        loading = true
+                    }
+                    source.append is LoadState.Loading -> {
+                        logger.i { "source append loading" }
+                        loading = true
+                    }
+                    source.prepend is LoadState.Loading -> {
+                        logger.i { "source prepend loading" }
+                        //currentIndex = pagingState.itemCount - pageSize
+                        loading = true
+                    }
+                    source.refresh is LoadState.NotLoading -> {
+                        logger.i { "source refresh not loading" }
+                        //val requiredIndex = pageIndex * pageSize
+                        //val possibleIndex = pagingState.itemCount - pageSize
+                        /*
+                        if (requiredIndex != currentIndex) {
+                            currentIndex = if (requiredIndex == possibleIndex) {
+                                requiredIndex
+                            } else {
+                                possibleIndex
+                            }
+                        }
+                        */
+                        loading = false
+                    }
+                    source.append is LoadState.NotLoading -> {
+                        logger.i { "source append not loading" }
+                        loading = false
+                    }
+                    source.prepend is LoadState.NotLoading -> {
+                        logger.i { "source prepend not loading" }
+                        loading = false
+                    }
+                }
+            }
+/*
             Column(
                 modifier = modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -202,23 +227,31 @@ fun ResultListView(
                     IconButton(
                         onClick = {
                             pageIndex -= 1
+                            val prevIndex = pageSize * pageIndex
+                            logger.i { "nextIndex: $prevIndex, pageIndex: $pageIndex" }
+                            currentIndex = prevIndex
                         },
-                        enabled = pageIndex > 1,
+                        enabled = pageIndex > 0,
                     ) {
                         Icon(Icons.AutoMirrored.Default.ArrowBack, "Previous")
                     }
                     IconButton(
                         onClick = {
                             pageIndex += 1
+                            val nextIndex = pageSize * pageIndex
+                            logger.i { "nextIndex: $nextIndex, pageIndex: $pageIndex" }
+                            currentIndex = nextIndex
                         },
                         enabled = pageIndex < ceil(
                             pagingState.itemCount.toDouble() / pageSize.toDouble()
-                        ).toInt()
+                        ).toInt(),
                     ) {
                         Icon(Icons.AutoMirrored.Default.ArrowForward, "Next")
                     }
                 }
             }
+
+ */
         }
 
         is SearchState.Error -> {
@@ -251,6 +284,7 @@ fun LoadingBox(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Text("Loading...")
         CircularProgressIndicator()
     }
 }
@@ -272,6 +306,7 @@ fun FlatLoadingBox(
 @Composable
 fun ItemView(
     sendIntent: (SearchIntent) -> Unit,
+    index: Int,
     repo: Repo,
     modifier: Modifier = Modifier
 ) {
@@ -285,7 +320,7 @@ fun ItemView(
         ListItem(
             modifier = modifier.hoverable(interactionSource = interactionSource),
             headlineContent = { Text(repo.name) },
-            supportingContent = { Text(repo.owner) },
+            supportingContent = { Text("${repo.owner} $index") },
             trailingContent = {
                 IconButton(
                     onClick = {
