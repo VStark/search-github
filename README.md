@@ -22,5 +22,4 @@ If you want to also add/remove star on repository you will need to add extra per
 
 ### Limitations
 
-Unfortunately the project is currently aiming only Android platform, I couldn't overcome some incompatibility issues with Room and Paging libraries with other platforms. 
-I would like to add more, but many libraries are currently in Alpha so it also needs some time to get more mature...
+The project currently supports only Android and JVM targets. More targets can be added in the future.
