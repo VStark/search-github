@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
-import androidx.paging.compose.collectAsLazyPagingItems
 import co.touchlab.kermit.Logger
 import com.sg.data.model.Repo
 import kotlin.math.ceil

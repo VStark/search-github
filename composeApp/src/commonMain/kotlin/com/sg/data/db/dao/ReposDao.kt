@@ -15,7 +15,7 @@ interface ReposDao {
     suspend fun insertAll(queries: List<RepoEntity>)
 
     @Transaction
-    @Query("SELECT * FROM repos " +
+    @Query("SELECT repos.id, repos.repo_id, repos.node_id, repos.name, repos.owner FROM repos " +
             "JOIN repos_page ON repos.repo_id = repos_page.repo_id " +
             "WHERE repos_page.`query` = :query " +
             "AND repos_page.page = :page " +
@@ -26,7 +26,7 @@ interface ReposDao {
     suspend fun deleteAll()
 
     @Transaction
-    @Query("SELECT * FROM repos " +
+    @Query("SELECT repos.id, repos.repo_id, repos.node_id, repos.name, repos.owner FROM repos " +
             "JOIN repos_page ON repos.repo_id = repos_page.repo_id " +
             "WHERE repos_page.`query` = :query " +
             "ORDER BY id ASC")

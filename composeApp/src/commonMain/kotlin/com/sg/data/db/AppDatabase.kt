@@ -6,6 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import com.sg.data.db.dao.RemoteKeyDao
 import com.sg.data.db.dao.ReposPageDao
@@ -19,7 +20,9 @@ import kotlinx.coroutines.Dispatchers
 
 
 @Suppress("NO_ACTUAL_FOR_EXPECT", "EXPECT_AND_ACTUAL_IN_THE_SAME_MODULE")
-expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>
+expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
+    override fun initialize(): AppDatabase
+}
 
 @Database(
     entities = [
@@ -43,6 +46,7 @@ fun getRoomDatabase(
 ): AppDatabase {
     return builder
         .addMigrations(*MIGRATIONS)
+        .setDriver(BundledSQLiteDriver())
         .fallbackToDestructiveMigrationOnDowngrade(true)
         .setQueryCoroutineContext(Dispatchers.IO)
         .build()
