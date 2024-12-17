@@ -15,6 +15,8 @@ plugins {
     alias(libs.plugins.androidx.room)
 }
 
+val appVersion = "1.3.0"
+
 kotlin {
     androidTarget {
         compilerOptions {
@@ -87,8 +89,8 @@ android {
         applicationId = "com.sg"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.target.sdk.get().toInt()
-        versionCode = 120
-        versionName = "1.2.0"
+        versionCode = appVersion.replace(".", "").toInt()
+        versionName = appVersion
     }
     packaging {
         resources {
@@ -123,7 +125,7 @@ compose {
             nativeDistributions {
                 targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
                 packageName = "com.sg"
-                packageVersion = "1.0.0"
+                packageVersion = appVersion
             }
         }
     }
